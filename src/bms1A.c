@@ -4,29 +4,33 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "ecc.h"
-static const char *OUT_FILE_NAME = "encoded_output";
+#include "constants.h"
 
-int INPUT_BUFFER_SIZE = 150; // pocet
-int CODE_WORD_BUFFER_SIZE = 256; // pocet
-
-void encode_word(char *input_buffer, char *code_word) {
-    /*TODO tady muze byt problem s pretecenim*/
-    encode_data(input_buffer, sizeof(input_buffer), code_word);
+void encode_word(unsigned char *input_buffer, unsigned char *code_word) {
+    encode_data(input_buffer, DATA_BYTES, code_word);
 }
 
-void add_to_output(char *code_word, FILE *fout){
-//    printf("%s \n", code_word);
-    fputs(code_word, fout);
+void add_to_output(unsigned char *code_word, FILE *fout, int size){
+    fwrite(code_word, sizeof(unsigned char), size, fout);
 }
+//
+//void create_output_file_name(char *output_file_name, char *input_file_name) {
+//    output_file_name = malloc(strlen(input_file_name)+1+4);
+//    strcpy(output_file_name, input_file_name);
+//    strcat(output_file_name, ".out");
+//}
 
 int main(int argc, char *argv[]) {
 
-    char *file_name;
+    int bytes_read;
+    char *file_name/*, *file_name_out = ""*/;
     FILE *fin;
     FILE *fout;
-    char input_buffer[INPUT_BUFFER_SIZE];
-    char code_word[INPUT_BUFFER_SIZE];
+    unsigned char input_buffer[DATA_BYTES];
+    unsigned char code_word[DATA_BYTES+NPAR];
+
 
     /* Initialization the ECC library */
     initialize_ecc ();
@@ -37,50 +41,32 @@ int main(int argc, char *argv[]) {
     }
 
     file_name = argv[1];
+//    create_output_file_name(file_name_out, file_name);
     fin = fopen(file_name , "r");
-    fout = fopen("encoded_output" , "w");
+    fout = fopen("input.out", "w");
 
     if(fin == NULL) {
         fprintf(stderr, "Error opening file\n");
         return EXIT_FAILURE;
     }
 
-    printf("Jdeme cist\n");
-    while (fgets(input_buffer, INPUT_BUFFER_SIZE, fin) != NULL)
-    {
-        printf("buffer: %s\n", input_buffer);
+    memset(input_buffer, 0, sizeof(unsigned char) * (DATA_BYTES));
+    memset(code_word, 0, sizeof(unsigned char) * (DATA_BYTES + NPAR));
+    while((bytes_read = fread(input_buffer, sizeof(unsigned char), DATA_BYTES, fin)) > 0){
+        //zakodovani
         encode_word(input_buffer, code_word);
-        add_to_output(code_word, fout);
+        //TODO prokladani
+
+        //tisk do vystupu
+        add_to_output(code_word, fout, bytes_read + NPAR);
+
+        //clear memory
+        memset(input_buffer, 0, sizeof(unsigned char) * (DATA_BYTES));
+        memset(code_word, 0, sizeof(unsigned char) * (DATA_BYTES + NPAR));
     }
 
-//    int erasures[16];
-//    int nerasures = 0;
-//    /* ************** */
-//
-    /* Encode data into codeword, adding NPAR parity bytes */
-//    encode_data(msg, sizeof(msg), codeword);
-//
-//    printf("Encoded data is: \"%s\"\n", codeword);
-//
-//#define ML (sizeof (msg) + NPAR)
-//
-//
-//    /* Add one error and two erasures */
-//    byte_err(0x35, 3, codeword);
-//
-//    byte_err(0x23, 17, codeword);
-//    byte_err(0x34, 19, codeword);
-//
-//
-//    printf("with some errors: \"%s\"\n", codeword);
-//
-//    /* We need to indicate the position of the erasures.  Eraseure
-//       positions are indexed (1 based) from the end of the message... */
-//
-//    erasures[nerasures++] = ML-17;
-//    erasures[nerasures++] = ML-19;
     fclose(fin);
-//    fclose(fout);
+    fclose(fout);
 
     return EXIT_SUCCESS;
 }
