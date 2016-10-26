@@ -12,6 +12,32 @@ void encode_word(unsigned char *input_buffer, unsigned char *code_word) {
     encode_data(input_buffer, DATA_BYTES, code_word);
 }
 
+void print_to_output(unsigned char **interlaced_result, FILE *fout, int words_count, int last_word_byte){
+    int i, j;
+    for (i = 0; i < DATA_BYTES + NPAR; ++i) {
+        for (j = 0; j < words_count; ++j) {
+            if(j < words_count - 1 || i < last_word_byte){
+                fputc(interlaced_result[j][i], fout);
+            }
+        }
+    }
+}
+
+unsigned char** interleaving(unsigned char **interlaced_result, unsigned char *code_word, int bytes_read, int words_count){
+    if(words_count == 0){
+        interlaced_result = malloc(sizeof(unsigned char*));
+        printf("prvni\n");
+        interlaced_result = realloc(interlaced_result, sizeof(unsigned char*) * 2);
+    } else {
+        printf("druhy\n");
+        interlaced_result = realloc(interlaced_result, sizeof(unsigned char*) * (words_count + 1));
+    }
+    interlaced_result[words_count] = malloc(bytes_read * sizeof(unsigned char*));
+
+    memcpy(interlaced_result[words_count], code_word, bytes_read);
+    return interlaced_result;
+}
+
 void add_to_output(unsigned char *code_word, FILE *fout, int size){
     fwrite(code_word, sizeof(unsigned char), size, fout);
 }
@@ -24,13 +50,14 @@ void add_to_output(unsigned char *code_word, FILE *fout, int size){
 
 int main(int argc, char *argv[]) {
 
-    int bytes_read;
+    int bytes_read, words_count = 0;
     char *file_name/*, *file_name_out = ""*/;
     FILE *fin;
     FILE *fout;
     unsigned char input_buffer[DATA_BYTES];
     unsigned char code_word[DATA_BYTES+NPAR];
 
+    unsigned char **interlaced_result;
 
     /* Initialization the ECC library */
     initialize_ecc ();
@@ -53,17 +80,20 @@ int main(int argc, char *argv[]) {
     memset(input_buffer, 0, sizeof(unsigned char) * (DATA_BYTES));
     memset(code_word, 0, sizeof(unsigned char) * (DATA_BYTES + NPAR));
     while((bytes_read = fread(input_buffer, sizeof(unsigned char), DATA_BYTES, fin)) > 0){
+        printf("Ctu slovo\n");
         //zakodovani
         encode_word(input_buffer, code_word);
         //TODO prokladani
-
-        //tisk do vystupu
-        add_to_output(code_word, fout, bytes_read + NPAR);
+        interlaced_result = interleaving(interlaced_result, code_word, bytes_read + NPAR, words_count);
 
         //clear memory
         memset(input_buffer, 0, sizeof(unsigned char) * (DATA_BYTES));
         memset(code_word, 0, sizeof(unsigned char) * (DATA_BYTES + NPAR));
+        ++words_count;
     }
+
+    //tisk do vystupu
+    print_to_output(interlaced_result, fout, words_count, bytes_read + NPAR);
 
     fclose(fin);
     fclose(fout);

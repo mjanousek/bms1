@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "ecc.h"
 #include "constants.h"
 
@@ -45,7 +46,6 @@ int main(int argc, char *argv[]) {
     FILE *fin;
     FILE *fout;
     unsigned char decoded_code_word[DATA_BYTES + 1];
-    unsigned char code_word[DATA_BYTES+NPAR];
 
 
     /* Initialization the ECC library */
@@ -65,25 +65,52 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
     }
 
-    memset(decoded_code_word, 0, (DATA_BYTES + 1) * sizeof(char));
-    memset(code_word, 0, (DATA_BYTES + NPAR + 1) * sizeof(char));
-    while((bytes_read = fread(code_word, sizeof(unsigned char), DATA_BYTES + NPAR, fin)) > 0) {
+    fseek(fin, 0L, SEEK_END);
+    int sizeOfFile = ftell(fin);
+    //seeking to go to the beginning)
+    rewind(fin);
+    int word_count = ceil(((float) sizeOfFile) / (DATA_BYTES+NPAR));
+    int last_word_bytes = sizeOfFile % (DATA_BYTES+NPAR);
+    unsigned char coded_file[word_count][DATA_BYTES+NPAR];
+    unsigned char code_interlaced_word[word_count];
+
+
+    int i = 0;
+    int word_lenght = word_count;
+    while((bytes_read = fread(code_interlaced_word, sizeof(unsigned char), word_lenght, fin)) > 0) {
+        int j;
+        for (j = 0; j < bytes_read; ++j) {
+            coded_file[j][i] = code_interlaced_word[j];
+        }
+        i++;
+        if(i == last_word_bytes) {
+            word_lenght--;
+        }
+    }
+
+//    memset(decoded_code_word, 0, (DATA_BYTES + 1) * sizeof(char));
+//    memset(code_word, 0, (DATA_BYTES + NPAR + 1) * sizeof(char));
+    int bytes_count = DATA_BYTES + NPAR;
+    for (i = 0; i < word_count; ++i) {
+        if(i == word_count - 1){
+            bytes_count = last_word_bytes;
+        }
         //TODO prokladani
         //zakodovani
-        decode_data(code_word, bytes_read);
+        decode_data(coded_file[i], bytes_count);
         //TODO correct errors
         if (check_syndrome() != 0) {
-            correct_errors_erasures(code_word, bytes_read, 0, NULL);
-            printf("Corrected codeword: \"%s\"\n", code_word);
+            correct_errors_erasures(coded_file[i], bytes_count, 0, NULL);
+            printf("Corrected codeword: \"%s\"\n",  coded_file[i]);
         }
-        memcpy(decoded_code_word, code_word, bytes_read - NPAR);
-        decoded_code_word[bytes_read - NPAR] = '\0';
+        memcpy(decoded_code_word, coded_file[i], bytes_count - NPAR);
+        decoded_code_word[bytes_count - NPAR] = '\0';
         //tisk do vystupu
-        add_to_output(decoded_code_word, fout, bytes_read - NPAR + 1);
+        add_to_output(decoded_code_word, fout, bytes_count - NPAR + 1);
 
         //vycisteni pameti
         memset(decoded_code_word, 0, (DATA_BYTES) * sizeof(char));
-        memset(code_word, 0, (DATA_BYTES + NPAR) * sizeof(char));
+//        memset(code_word, 0, (DATA_BYTES + NPAR) * sizeof(char));
 
     }
     fclose(fin);
