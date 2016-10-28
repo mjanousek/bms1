@@ -75,22 +75,22 @@ int main(int argc, char *argv[]) {
     int last_word_bytes = sizeOfFile % (DATA_BYTES+NPAR);
     unsigned char coded_file[word_count][DATA_BYTES+NPAR];
     unsigned char code_interlaced_word[word_count];
-    last_word_bytes = (last_word_bytes == 0) ? DATA_BYTES : last_word_bytes;
+    last_word_bytes = (last_word_bytes == 0) ? DATA_BYTES+NPAR : last_word_bytes;
 
 
     int i = 0;
     int word_lenght = word_count;
     printf("Number of words %d\n", word_lenght);
     while((bytes_read = fread(code_interlaced_word, sizeof(unsigned char), word_lenght, fin)) > 0) {
-        printf("size of file: %d\n", sizeOfFile);
+//        printf("bytes read: %d\n", bytes_read);
         for (int j = 0; j < bytes_read; ++j) {
             coded_file[j][i] = code_interlaced_word[j];
+//            printf("%d, %d: %c\n", j, i, code_interlaced_word[j]);
         }
         i++;
         if(i == last_word_bytes) {
             word_lenght--;
         }
-
     }
 
 //    memset(decoded_code_word, 0, (DATA_BYTES + 1) * sizeof(char));
@@ -103,14 +103,15 @@ int main(int argc, char *argv[]) {
         }
         //TODO prokladani
         //zakodovani
-        printf("ENCO: %s\n", coded_file[i]);
+//        printf("ENCO: %s\n", coded_file[i]);
         decode_data(coded_file[i], bytes_count);
+        decoded_code_word[bytes_count - NPAR] = '\0';
         //TODO correct errors
         if (check_syndrome() != 0) {
             correct_errors_erasures(coded_file[i], bytes_count, 0, NULL);
             printf("Corrected codeword: \"%s\"\n",  coded_file[i]);
         }
-        printf("DECO: %s\n", coded_file[i]);
+//        printf("DECO: %s\n", coded_file[i]);
         memcpy(decoded_code_word, coded_file[i], bytes_count - NPAR);
         printf("DECO: %s\n", decoded_code_word);
 //        decoded_code_word[bytes_count - NPAR] = '\0';

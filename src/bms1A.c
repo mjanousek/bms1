@@ -18,12 +18,11 @@ void print_to_output(unsigned char **interlaced_result, FILE *fout, int words_co
         for (j = 0; j < words_count; ++j) {
             if(j < words_count - 1 || i < last_word_byte){
                 fputc(interlaced_result[j][i], fout);
-                printf("%d%d\n", j, i);
+//                printf("%d%d\n", j, i);
             }
         }
     }
 }
-
 
 unsigned char** interleaving(unsigned char **interlaced_result, unsigned char *code_word, int bytes_read, int words_count){
     if(words_count == 0){
