@@ -44,8 +44,7 @@ int main(int argc, char *argv[]) {
 
     int bytes_read;
     char *file_name, *file_name_out = "";
-    FILE *fin;
-    FILE *fout;
+    FILE *fin, *fout;
     unsigned char decoded_code_word[DATA_BYTES + 1];
 
     /* Initialization the ECC library */
@@ -73,19 +72,18 @@ int main(int argc, char *argv[]) {
     rewind(fin);
     int word_count = ceil(((float) sizeOfFile) / (DATA_BYTES+NPAR));
     int last_word_bytes = sizeOfFile % (DATA_BYTES+NPAR);
-    unsigned char coded_file[word_count][DATA_BYTES+NPAR];
-    unsigned char code_interlaced_word[word_count];
+    unsigned char file_in_memory[word_count][DATA_BYTES+NPAR];
+    unsigned char input_buffer[word_count];
     last_word_bytes = (last_word_bytes == 0) ? DATA_BYTES+NPAR : last_word_bytes;
-
 
     int i = 0;
     int word_lenght = word_count;
     printf("Number of words %d\n", word_lenght);
-    while((bytes_read = fread(code_interlaced_word, sizeof(unsigned char), word_lenght, fin)) > 0) {
+    while((bytes_read = fread(input_buffer, sizeof(unsigned char), word_lenght, fin)) > 0) {
 //        printf("bytes read: %d\n", bytes_read);
         for (int j = 0; j < bytes_read; ++j) {
-            coded_file[j][i] = code_interlaced_word[j];
-//            printf("%d, %d: %c\n", j, i, code_interlaced_word[j]);
+            file_in_memory[j][i] = input_buffer[j];
+//            printf("%d, %d: %c\n", j, i, input_buffer[j]);
         }
         i++;
         if(i == last_word_bytes) {
@@ -103,16 +101,16 @@ int main(int argc, char *argv[]) {
         }
         //TODO prokladani
         //zakodovani
-//        printf("ENCO: %s\n", coded_file[i]);
-        decode_data(coded_file[i], bytes_count);
+//        printf("ENCO: %s\n", file_in_memory[i]);
+        decode_data(file_in_memory[i], bytes_count);
         decoded_code_word[bytes_count - NPAR] = '\0';
         //TODO correct errors
         if (check_syndrome() != 0) {
-            correct_errors_erasures(coded_file[i], bytes_count, 0, NULL);
-            printf("Corrected codeword: \"%s\"\n",  coded_file[i]);
+            correct_errors_erasures(file_in_memory[i], bytes_count, 0, NULL);
+            printf("Corrected codeword: \"%s\"\n",  file_in_memory[i]);
         }
-//        printf("DECO: %s\n", coded_file[i]);
-        memcpy(decoded_code_word, coded_file[i], bytes_count - NPAR);
+//        printf("DECO: %s\n", file_in_memory[i]);
+        memcpy(decoded_code_word, file_in_memory[i], bytes_count - NPAR);
         printf("DECO: %s\n", decoded_code_word);
 //        decoded_code_word[bytes_count - NPAR] = '\0';
         //tisk do vystupu

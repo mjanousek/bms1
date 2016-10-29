@@ -71,7 +71,6 @@ int main(int argc, char *argv[]) {
     fin = fopen(file_name , "r");
     fout = fopen(file_name_out, "w");
 
-
     if(fin == NULL) {
         fprintf(stderr, "Error opening file\n");
         return EXIT_FAILURE;
