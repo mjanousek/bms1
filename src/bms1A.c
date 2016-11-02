@@ -18,11 +18,18 @@ void print_to_output(unsigned char **interlaced_result, FILE *fout, int words_co
         for (j = 0; j < words_count; ++j) {
             if(j < words_count - 1 || i < last_word_byte){
                 fputc(interlaced_result[j][i], fout);
-//                printf("%d%d\n", j, i);
             }
         }
     }
 }
+
+void free_memmory(unsigned char **interlaced_result, int words_count){
+    for (int i = 0; i < words_count; ++i) {
+        free(interlaced_result[i]);
+    }
+    free(interlaced_result);
+}
+
 
 unsigned char** interleaving(unsigned char **interlaced_result, unsigned char *code_word, int bytes_read, int words_count){
     if(words_count == 0){
@@ -32,12 +39,8 @@ unsigned char** interleaving(unsigned char **interlaced_result, unsigned char *c
     }
     interlaced_result[words_count] = malloc(bytes_read * sizeof(unsigned char*));
     memcpy(interlaced_result[words_count], code_word, bytes_read);
-    printf("INTE: %s", interlaced_result[words_count]);
+//    printf("INTE: %s", interlaced_result[words_count]);
     return interlaced_result;
-}
-
-void add_to_output(unsigned char *code_word, FILE *fout, int size){
-    fwrite(code_word, sizeof(unsigned char), size, fout);
 }
 
 char * create_output_file_name(char *output_file_name, char *input_file_name) {
@@ -69,7 +72,7 @@ int main(int argc, char *argv[]) {
     file_name = argv[1];
     file_name_out = create_output_file_name(file_name_out, file_name);
     fin = fopen(file_name , "r");
-    fout = fopen(file_name_out, "w");
+    fout = fopen(file_name_out, "wb");
 
     if(fin == NULL) {
         fprintf(stderr, "Error opening file\n");
@@ -79,11 +82,10 @@ int main(int argc, char *argv[]) {
     memset(input_buffer, 0, sizeof(unsigned char) * (DATA_BYTES + 1));
     memset(code_word, 0, sizeof(unsigned char) * (DATA_BYTES + NPAR));
     while((bytes_read = fread(input_buffer, sizeof(unsigned char), DATA_BYTES, fin)) > 0){
-        printf("READ: \"%s\"\n", input_buffer);
+//        printf("READ: \"%s\"\n", input_buffer);
         //zakodovani
         encode_word(input_buffer, code_word, bytes_read);
-
-        printf("ENCO: \"%s\"\n", code_word);
+//        printf("ENCO: \"%s\"\n", code_word);
 
         //TODO prokladani
         interlaced_result = interleaving(interlaced_result, code_word, bytes_read + NPAR, words_count);
@@ -98,6 +100,8 @@ int main(int argc, char *argv[]) {
     //tisk do vystupu
     printf("-%d-", last_word_bytes + NPAR);
     print_to_output(interlaced_result, fout, words_count, last_word_bytes + NPAR);
+    free_memmory(interlaced_result, words_count);
+    free(file_name_out);
 
     fclose(fin);
     fclose(fout);

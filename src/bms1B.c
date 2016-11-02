@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
     }
 
     file_name = argv[1];
-    fin = fopen(file_name , "r");
+    fin = fopen(file_name , "rb");
     file_name_out = create_output_file_name(file_name_out, file_name);
     fout = fopen(file_name_out, "w");
 
@@ -91,6 +91,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
+
 //    memset(decoded_code_word, 0, (DATA_BYTES + 1) * sizeof(char));
 //    memset(code_word, 0, (DATA_BYTES + NPAR + 1) * sizeof(char));
     int bytes_count = DATA_BYTES + NPAR;
@@ -99,28 +100,24 @@ int main(int argc, char *argv[]) {
             bytes_count = last_word_bytes;
             printf("Last word: %d\n", last_word_bytes);
         }
-        //TODO prokladani
         //zakodovani
 //        printf("ENCO: %s\n", file_in_memory[i]);
         decode_data(file_in_memory[i], bytes_count);
-        decoded_code_word[bytes_count - NPAR] = '\0';
+//        decoded_code_word[bytes_count - NPAR] = '\0';
         //TODO correct errors
-        if (check_syndrome() != 0) {
-            correct_errors_erasures(file_in_memory[i], bytes_count, 0, NULL);
-            printf("Corrected codeword: \"%s\"\n",  file_in_memory[i]);
-        }
+        correct_errors_erasures(file_in_memory[i], bytes_count, 0, NULL);
 //        printf("DECO: %s\n", file_in_memory[i]);
         memcpy(decoded_code_word, file_in_memory[i], bytes_count - NPAR);
-        printf("DECO: %s\n", decoded_code_word);
+//        printf("DECO: %s\n", decoded_code_word);
 //        decoded_code_word[bytes_count - NPAR] = '\0';
         //tisk do vystupu
         add_to_output(decoded_code_word, fout, bytes_count - NPAR);
 
         //vycisteni pameti
         memset(decoded_code_word, 0, (DATA_BYTES) * sizeof(char));
-//        memset(code_word, 0, (DATA_BYTES + NPAR) * sizeof(char));
-
     }
+    free(file_name_out);
+
     fclose(fin);
     fclose(fout);
 
